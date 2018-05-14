@@ -8,6 +8,9 @@ import numpy as np
 #             so our data shapes are actually (n, 2 * context size)
 
 class CBowIterator(mx.io.DataIter):
+    """
+    CBOW iterator for MXnet
+    """
     def __init__(self, dictionary_corpus, no_context_words, batch_size=5, verbose=False):
         super(CBowIterator, self).__init__(batch_size=batch_size)
 
