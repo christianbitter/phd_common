@@ -1,14 +1,15 @@
-from subprocess import call
-import os
-from os import path
-import tempfile
-import shutil
-import uuid
-import types
 import glob
-import pdf
+import os
+import shutil
+import tempfile
+import types
+import uuid
+from os import path
+from subprocess import call
 
 from bs4 import BeautifulSoup
+
+import pdf
 
 
 def outline_to_im(pdf_fp,
@@ -322,7 +323,9 @@ def pdf_to_pagewise_html(pdf_fp,
     if not os.path.isfile(pdf_fp):
         raise ValueError('pdf_to_pagewise_html - pdf file does not exist')
 
-    info = pdf.pdf_info(pdf_fp)
+    # extract meta-data and document structure
+    info = pdf.pdf_info(pdf_fp = pdf_fp)
+    content_struct = structure_from_bs4outline(pdf_fp=pdf_fp)
 
     verbose = kwargs.get('verbose', False)
 
@@ -367,9 +370,13 @@ def pdf_to_pagewise_html(pdf_fp,
     # read back the generated html files - and return them
     out_struct = {'pdf_fp': pdf_fp,
                   'info'  : info,
+                  'structure': content_struct,
                   'page_struct': pages}
 
-    doc_proc = doc_proc_fn(out_struct, pdf_info=info, verbose=verbose)
+    doc_proc = doc_proc_fn(out_struct,
+                           pdf_info=info,
+                           document_structure=content_struct,
+                           verbose=verbose)
 
     out_struct['doc_struct'] = doc_proc
 

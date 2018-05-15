@@ -1,12 +1,14 @@
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk import ngrams
-import string
-import re
-import random
-from collections import Counter
-import numpy as np
 import math
+import random
+import re
+import string
+from collections import Counter
+
+import numpy as np
+from nltk import ngrams
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
 
 # TODO: as part of our dictionary building we should build an index into words that should be treated as one
 # some bigrams are New York
@@ -58,6 +60,7 @@ def onehot_from_dictionary(dictionary, token):
 
     return v_onehot
 
+
 def corpus_to_onehot(dictionary, corpus):
     """
     represent the tokens in the corpus as a one-hot resulting in a one-hot matrix of dimensionality [dict, corpus].
@@ -101,10 +104,6 @@ def onehot_to_corpus(dictionary, m_onehot):
     assert(corpus.__len__() == m_onehot.shape[0])
 
     return corpus
-
-
-def build_previous_wordcorpus_from_dictionary(dictionary, n_previous_words = 2):
-    pass
 
 
 def fn_preprocess_corpus(replace_dict, verbose = True, save_processed = None):
@@ -184,9 +183,11 @@ def fn_tokenize_word(ngram=2,
 
     return tokenize
 
+
 def fn_tokenize_unigram(remove_stopwords=True, remove_numbers=True, remove_punctuation=True):
     # convenience function
     return fn_tokenize_word(ngram=1, remove_stopwords=True, remove_numbers=True, remove_punctuation=True)
+
 
 def fn_tokenize_bigram(remove_stopwords=True, remove_numbers=True, remove_punctuation=True):
     # convenience function
@@ -479,3 +480,20 @@ def pcond_ij(cooccurrence_matrix, token_idx_i, token_idx_j):
     c_j = np.sum(cooccurrence_matrix[token_idx_j, :])
     c_i_and_j = cooccurrence_matrix[token_idx_j, token_idx_i]
     return c_i_and_j / c_j
+
+
+def replace_using_dictionary(text, replace_dict):
+    assert (isinstance(replace_dict, dict))
+
+    if not text or not text.strip:
+        raise ValueError("replace_using_dictionary - text missing")
+
+    out_text = text.strip()
+    if len(replace_dict) > 0:
+        for key in replace_dict.keys():
+            find_pos = out_text.find(key)
+            if find_pos >= 0:
+                val = replace_dict[key]
+                out_text = out_text.replace(key, val)
+
+    return out_text
