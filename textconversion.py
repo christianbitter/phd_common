@@ -328,6 +328,7 @@ def pdf_to_pagewise_html(pdf_fp,
     content_struct = structure_from_bs4outline(pdf_fp=pdf_fp)
 
     verbose = kwargs.get('verbose', False)
+    pagewise_substitution_dict = kwargs.get('pagewise_substitution_dict', None)
 
     temp_dir = tempfile.gettempdir()
     temp_dir_fp = os.path.join(temp_dir, str(uuid.uuid1()))
@@ -352,7 +353,10 @@ def pdf_to_pagewise_html(pdf_fp,
     temp_pattern = "%s%sgenerated_*.html" % (temp_dir_fp, os.sep)
     pages = {}
     for i, j_file_fp in enumerate(glob.glob(temp_pattern)):
-        page_ret = page_proc_fn(j_file_fp, pdf_info=info, verbose=verbose)
+        page_ret = page_proc_fn(j_file_fp,
+                                pdf_info=info,
+                                verbose=verbose,
+                                substitution_dictionary=pagewise_substitution_dict)
         o = {
             'page_no': i,
             'path' : j_file_fp,
