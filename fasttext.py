@@ -1,8 +1,8 @@
 import io
 import os
-import tempfile
-import uuid
 from subprocess import call
+
+import misc
 
 
 class FastText(object):
@@ -25,10 +25,17 @@ class FastText(object):
     analogies               query for analogies
     dump                    dump arguments, dictionary, input / output vectors
     """
-    def __init__(self, ft_path_fp, **kwargs):
+
+    FT_SUCCESS = 0
+
+    CMD_PRINT_SENTENCE_VECTORS = "print-sentence-vectors"
+    CMD_PRINT_WORD_VECTORS = "print-word-vectors"
+
+    def __init__(self, ft_path_fp, remove_intermediate_files=False, **kwargs):
         super(FastText, self).__init__(**kwargs)
         self.cmd = ft_path_fp
         self.ft_dir_fp = os.path.dirname(self.cmd)
+        self.remove_intermediate_files = remove_intermediate_files
 
     def supervised(self):
         pass
@@ -71,7 +78,7 @@ class FastText(object):
                 args.extend([test_data_fp])
             else:
                 # for now simulate the stdin with a file
-                predict_in_fp = os.path.join(tempfile.gettempdir(), "%s" % uuid.uuid4())
+                predict_in_fp = misc.get_temp_file(".txt")
                 with io.open(predict_in_fp, 'wb+') as in_file:
                     in_file.write(test_data_fp)
                 args.extend([predict_in_fp])
@@ -82,12 +89,12 @@ class FastText(object):
         if threshold is not None:
             args.extend([threshold])
 
-        predict_out_fp = os.path.join(tempfile.gettempdir(), "%s" % uuid.uuid4())
+        predict_out_fp = misc.get_temp_file()
         return_code = call(args=args, shell=False, cwd=self.ft_dir_fp, stdout=io.open(predict_out_fp, 'w+'))
 
         prediction = []
 
-        if return_code == 0:
+        if return_code == FastText.FT_SUCCESS:
             with io.open(file=predict_out_fp, mode='r+') as info_file:
                 s_prediction = info_file.readlines()
                 prediction = []
@@ -126,11 +133,92 @@ class FastText(object):
     def cbow(self):
         pass
 
-    def print_word_vectors(self):
-        pass
+    def print_word_vectors(self, model_fp, words):
+        """
+        Prints or returns the word vectors for the provided choice of words
+        :param model_fp: (str) file path to fasttext trained model bin
+        :param words: (str) string of desired tokens
+        :return: (dict) a dictionary with keys being tokens and values the individual word vectors
+        """
+        assert (isinstance(model_fp, str))
+        assert (isinstance(words, str))
+        if not model_fp:
+            raise ValueError("print_word_vectors - path to model vec file not defined.")
 
-    def print_sentence_vectors(self):
-        pass
+        if not os.path.isfile(model_fp):
+            raise ValueError("print_word_vectors - not a vec file.")
+
+        word_vectors = {}
+        if words:
+            word_fp = misc.get_temp_file(".txt")
+            with io.open(word_fp, "w+", encoding="ascii") as f_words:
+                f_words.write(words.decode("utf-8"))
+
+            args = [self.cmd,
+                    FastText.CMD_PRINT_WORD_VECTORS,
+                    model_fp]
+
+            word_vector_fp = misc.get_temp_file()
+
+            return_code = call(args=args, shell=False, cwd=self.ft_dir_fp,
+                               stdin=io.open(word_fp, 'r+'),
+                               stdout=io.open(word_vector_fp, 'w+'))
+
+            if return_code == FastText.FT_SUCCESS:
+                print(word_vector_fp)
+                with io.open(word_vector_fp, "r+") as f_wordvectors:
+                    for a_vector in f_wordvectors.readlines():
+                        a_line   = a_vector.split(" ")
+                        token    = a_line[0]
+                        a_vector = [float(s) for s in a_line[1:] if not s.isspace()]
+                        word_vectors[token] = a_vector
+
+            # cleanup
+            if self.remove_intermediate_files:
+                os.remove(word_fp)
+                os.remove(word_vector_fp)
+
+        return word_vectors
+
+    def print_sentence_vectors(self, model_fp, sentence):
+        assert (isinstance(model_fp, str))
+        assert (isinstance(sentence, str))
+        if not model_fp:
+            raise ValueError("print_sentence_vectors - path to model vec file not defined.")
+
+        if not os.path.isfile(model_fp):
+            raise ValueError("print_sentence_vectors - not a vec file.")
+
+        sentence_vector = {}
+        if sentence:
+            sentence_fp = misc.get_temp_file(".txt")
+            with io.open(sentence_fp, "w+", encoding="ascii") as f_sentence:
+                f_sentence.write(sentence.decode("utf-8"))
+
+            args = [self.cmd,
+                    FastText.CMD_PRINT_SENTENCE_VECTORS,
+                    model_fp]
+
+            sentence_vector_fp = misc.get_temp_file()
+
+            return_code = call(args=args, shell=False, cwd=self.ft_dir_fp,
+                               stdin=io.open(sentence_fp, 'r+'),
+                               stdout=io.open(sentence_vector_fp, 'w+'))
+
+            if return_code == FastText.FT_SUCCESS:
+                with io.open(sentence_vector_fp, "r+") as f_svectors:
+                    for a_vector in f_svectors.readlines():
+                        a_line = a_vector.split(" ")
+                        token = a_line[0]
+                        a_vector = [float(s) for s in a_line[1:] if not s.isspace()]
+                        sentence_vector[token] = a_vector
+
+            # cleanup
+            if self.remove_intermediate_files:
+                os.remove(sentence_fp)
+                os.remove(sentence_vector_fp)
+
+        return sentence_vector
 
     def print_ngrams(self):
         pass
