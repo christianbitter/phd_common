@@ -30,6 +30,9 @@ class FastText(object):
 
     CMD_PRINT_SENTENCE_VECTORS = "print-sentence-vectors"
     CMD_PRINT_WORD_VECTORS = "print-word-vectors"
+    CMD_PREDICT = "predict"
+    CMD_SKIPGRAM = "skipgram"
+    CMD_CBOW     = "cbow"
 
     def __init__(self, ft_path_fp, remove_intermediate_files=False, **kwargs):
         super(FastText, self).__init__(**kwargs)
@@ -70,7 +73,7 @@ class FastText(object):
             raise ValueError("predict - model_fp not provided")
 
         args = [self.cmd,
-                "predict",
+                FastText.CMD_PREDICT,
                 model_fp]
 
         if test_data_fp is not None:
@@ -108,7 +111,7 @@ class FastText(object):
     def predict_prob(self):
         pass
 
-    def skipgram(self, input_fp, output_fp):
+    def skipgram(self, input_fp, output_fp, **kwargs):
         assert (isinstance(input_fp, str))
         assert (isinstance(output_fp, str))
 
@@ -123,15 +126,34 @@ class FastText(object):
             raise ValueError("skipgram - output directory does not exist")
 
         args = [self.cmd,
-                "skipgram",
+                FastText.CMD_SKIPGRAM,
                 "-input", input_fp,
                 "-output", output_fp]
 
         return_code = call(args=args, shell=False, cwd=self.ft_dir_fp)
-        return return_code == 0
+        return return_code == FastText.FT_SUCCESS
 
-    def cbow(self):
-        pass
+    def cbow(self, input_fp, output_fp, **kwargs):
+        assert (isinstance(input_fp, str))
+        assert (isinstance(output_fp, str))
+
+        if not input_fp:
+            raise ValueError("cbow - input_fp not provided")
+        if not input_fp:
+            raise ValueError("cbow - output_fp not provided")
+        if not os.path.isfile(input_fp):
+            raise ValueError("cbow - input_fp does not exist")
+        out_dir_fp = os.path.dirname(output_fp)
+        if not os.path.isdir(out_dir_fp):
+            raise ValueError("cbow - output directory does not exist")
+
+        args = [self.cmd,
+                FastText.CMD_cbow,
+                "-input", input_fp,
+                "-output", output_fp]
+
+        return_code = call(args=args, shell=False, cwd=self.ft_dir_fp)
+        return return_code == FastText.FT_SUCCESS
 
     def print_word_vectors(self, model_fp, words):
         """
